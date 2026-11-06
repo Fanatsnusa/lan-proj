@@ -1,21 +1,45 @@
 import socket
 
 server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-
 server.bind(("127.0.0.1",5000))
-
 server.listen()
+server.settimeout(1.0)
+max_message_size = 64*1024
 
-print("Server prinimaet")
+try:
+    while True:
+        try:
+            connection,address = server.accept()
+            print("подключился клиент:", address)
 
-connection,address = server.accept()
+        except socket.timeout:
+            continue
 
-data = connection.recv(1024)
+        connection.settimeout(30)
+        try:
+            data = b""
+            while not data.endswith(b"\n"):
+                chunk= connection.recv(1024)
 
-connection.sendall('Получил'.encode("utf-8"))
+                if chunk == b"":
+                    break
+                data += chunk
+                if len(data) > max_message_size:
+                    break
+            if len(data) > max_message_size:
+                print("сообщение превышает лимит")
+            elif data.endswith(b"\n"):
+                connection.sendall("Получил".encode("utf-8"))
+                print("Получено:", data[:-1].decode("utf-8"))
+            else:
+                print("Клиент отключился до конца сообщения")
+        except socket.timeout:
+            print("Клиент молчит")
+        finally:    
+            connection.close()
 
-print("Получено:", data.decode("utf-8"))
+except KeyboardInterrupt:
+    print("server stop")
 
-print("подключился клиент:", address)
-
-input("Enter — завершить сервер")
+finally:
+    server.close()
