@@ -7,13 +7,24 @@ print ("Подключился к серверу ")
 
 message = input("Введи сообщение: ")
 
+message_max_size=64*1024
+
 text= message + "\n"
 data= text.encode("utf-8")
 
 client.sendall(data)
 
-data =client.recv(1024)
 
-print(data.decode("utf-8"))
+data=b""
+while not data.endswith(b"\n"):
+    chunk=client.recv(1024)
+    if chunk == b"":
+        break
+    data += chunk
+
+if data.endswith(b"\n"):
+    print(data[:-1].decode("utf-8"))
+else:
+    print("Сервер закрыл соединение до конца ответа")
 
 client.close()

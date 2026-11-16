@@ -27,14 +27,16 @@ try:
                 if len(data) > max_message_size:
                     break
             if len(data) > max_message_size:
+                connection.sendall("ERROR TOO_LARGE\n".encode("utf-8"))
                 print("сообщение превышает лимит")
             elif data.endswith(b"\n"):
-                connection.sendall("Получил".encode("utf-8"))
+                connection.sendall("OK\n".encode("utf-8"))
                 print("Получено:", data[:-1].decode("utf-8"))
             else:
                 print("Клиент отключился до конца сообщения")
         except socket.timeout:
             print("Клиент молчит")
+            connection.sendall("ERROR TIMEOUT\n".encode("utf-8"))
         finally:    
             connection.close()
 
