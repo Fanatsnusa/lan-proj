@@ -1,31 +1,24 @@
 import socket
+from prot import receive_message
 
 server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind(("127.0.0.1",5000))
 server.listen()
 server.settimeout(1.0)
 max_message_size = 64*1024
-
+print("Ожидание подключения на 127.0.0.1:5000")
 try:
     while True:
         try:
             connection,address = server.accept()
-            print("подключился клиент:", address)
+            print("Подключился клиент:", address)
 
         except socket.timeout:
             continue
 
         connection.settimeout(30)
         try:
-            data = b""
-            while not data.endswith(b"\n"):
-                chunk= connection.recv(1024)
-
-                if chunk == b"":
-                    break
-                data += chunk
-                if len(data) > max_message_size:
-                    break
+            data= receive_message(connection,max_message_size)
             if len(data) > max_message_size:
                 connection.sendall("ERROR TOO_LARGE\n".encode("utf-8"))
                 print("сообщение превышает лимит")
@@ -39,9 +32,11 @@ try:
             connection.sendall("ERROR TIMEOUT\n".encode("utf-8"))
         finally:    
             connection.close()
+            print("Соединение закрыто")
 
 except KeyboardInterrupt:
-    print("server stop")
+    print("Получена команда остановки")
 
 finally:
     server.close()
+    print("Сервер остановлен")
