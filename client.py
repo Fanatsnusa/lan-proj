@@ -1,5 +1,6 @@
 import socket
 import time
+from pathlib import Path
 from prot import receive_message
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -15,8 +16,15 @@ try:
 
     while True:
         message = input("Введи сообщение: ")
+        is_file_upload = message == "/file"
         if message == "/exit":
             break
+        if message == "/file":
+            file_path=input("Укажите расположение файла: ")
+            file_bytes= Path(file_path).read_bytes()
+            extension = Path(file_path).suffix.lower() or ".bin"
+            print(f"Размер файла: {len(file_bytes)} байт")
+            message=f"FILE {len(file_bytes)} {extension}"
 
         text= message + "\n"
         data= text.encode("utf-8")
@@ -27,6 +35,12 @@ try:
         data,buffer=receive_message(client,message_max_size,buffer)
         elapsed_ms=(time.perf_counter()-started)*1000
         print(f"[Время запроса]{elapsed_ms:.1f} мс")
+
+        if is_file_upload == True and data == b"Ok File_header\n":
+            client.sendall(file_bytes)
+            upload_reply,buffer=receive_message(client,message_max_size,buffer)
+            if upload_reply == b"OK FILE SAVED\n":
+                print("Файл загружен на сервер")
 
         if len(data) > message_max_size:
             print("Сообщение от сервера слишком большое")
